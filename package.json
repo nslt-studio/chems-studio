@@ -1,0 +1,27 @@
+{
+  "name": "chems-studio",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/main.iife.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nslt-studio/chems-studio.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/nslt-studio/chems-studio/issues"
+  },
+  "homepage": "https://github.com/nslt-studio/chems-studio#readme",
+  "devDependencies": {
+    "swup": "^4.8.2",
+    "vite": "^7.3.1"
+  }
+}
