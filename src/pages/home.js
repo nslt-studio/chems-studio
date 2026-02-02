@@ -2,73 +2,91 @@
  * Home — logique spécifique à la homepage
  */
 
-let activeItem = null;
+let videoRAF = null;
 
-function init() {
-  document.querySelectorAll(".selected-item").forEach((item) => {
-    item.addEventListener("mouseenter", handleEnter);
-    item.addEventListener("mousemove", handleMove);
-    item.addEventListener("mouseleave", handleLeave);
-  });
+function formatTime(seconds) {
+  const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const s = String(Math.floor(seconds) % 60).padStart(2, "0");
+  const ms = String(Math.floor((seconds % 1) * 1000)).padStart(3, "0");
+  return `${m}:${s}:${ms}`;
 }
 
-function showTitles(item) {
-  if (item === activeItem) return;
+function setupTotalOverlay(totalEl) {
+  totalEl.style.position = "relative";
+  totalEl.style.opacity = "1";
 
-  const titles = item.querySelector(".selected-titles");
-  if (!titles) return;
+  const base = document.createElement("span");
+  base.style.opacity = "0.35";
+  base.setAttribute("data-total-base", "");
 
-  // Reset instantanément tous les autres
-  document.querySelectorAll(".selected-item .selected-titles").forEach((t) => {
-    if (t !== titles) {
-      t.style.transition = "none";
-      t.style.opacity = "";
-      t.style.transform = "";
+  const overlay = document.createElement("span");
+  overlay.style.position = "absolute";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.overflow = "hidden";
+  overlay.style.whiteSpace = "nowrap";
+  overlay.style.width = "0%";
+  overlay.setAttribute("data-total-overlay", "");
+
+  totalEl.textContent = "";
+  totalEl.appendChild(base);
+  totalEl.appendChild(overlay);
+}
+
+function updateVideoTimecodes() {
+  document.querySelectorAll(".selected-item").forEach((item) => {
+    const totalEl = item.querySelector("[video-total]");
+    const progressEl = item.querySelector("[video-progress]");
+    const video = item.querySelector("video");
+    if (!video) return;
+
+    if (totalEl && !totalEl.classList.contains("w-condition-invisible")) {
+      // Setup overlay structure on first pass
+      if (!totalEl.querySelector("[data-total-base]")) {
+        setupTotalOverlay(totalEl);
+      }
+
+      const timeStr = formatTime(video.duration || 0);
+      const base = totalEl.querySelector("[data-total-base]");
+      const overlay = totalEl.querySelector("[data-total-overlay]");
+      base.textContent = timeStr;
+      overlay.textContent = timeStr;
+
+      const progress = video.duration ? (video.currentTime / video.duration) * 100 : 0;
+      overlay.style.width = progress + "%";
+    }
+
+    if (progressEl && !progressEl.classList.contains("w-condition-invisible")) {
+      progressEl.textContent = formatTime(video.currentTime || 0);
     }
   });
 
-  activeItem = item;
+  videoRAF = requestAnimationFrame(updateVideoTimecodes);
+}
 
-  // Anime celui-ci
-  requestAnimationFrame(() => {
-    titles.style.transition = "opacity 300ms ease, transform 300ms ease";
-    titles.style.opacity = "1";
-    titles.style.transform = "translate(-50%, 0)";
+function handleTitlesClick(e) {
+  const item = e.currentTarget.closest(".selected-item");
+  if (!item) return;
+  item.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+}
+
+function init() {
+  document.querySelectorAll(".selected-titles-inner").forEach((el) => {
+    el.addEventListener("click", handleTitlesClick);
   });
-}
 
-function handleEnter(e) {
-  showTitles(e.currentTarget);
-}
-
-function handleMove(e) {
-  showTitles(e.currentTarget);
-}
-
-function handleLeave(e) {
-  const titles = e.currentTarget.querySelector(".selected-titles");
-  if (!titles) return;
-
-  activeItem = null;
-  titles.style.transition = "none";
-  titles.style.opacity = "";
-  titles.style.transform = "";
+  videoRAF = requestAnimationFrame(updateVideoTimecodes);
 }
 
 function cleanup() {
-  activeItem = null;
-
-  document.querySelectorAll(".selected-item").forEach((item) => {
-    item.removeEventListener("mouseenter", handleEnter);
-    item.removeEventListener("mousemove", handleMove);
-    item.removeEventListener("mouseleave", handleLeave);
+  document.querySelectorAll(".selected-titles-inner").forEach((el) => {
+    el.removeEventListener("click", handleTitlesClick);
   });
 
-  document.querySelectorAll(".selected-item .selected-titles").forEach((t) => {
-    t.style.transition = "";
-    t.style.opacity = "";
-    t.style.transform = "";
-  });
+  if (videoRAF) {
+    cancelAnimationFrame(videoRAF);
+    videoRAF = null;
+  }
 }
 
 export const home = { init, cleanup };

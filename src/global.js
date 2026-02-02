@@ -16,11 +16,12 @@ function initClock() {
 
   function update() {
     const now = new Date();
-    const h = String(now.getHours()).padStart(2, "0");
-    const m = String(now.getMinutes()).padStart(2, "0");
-    const s = String(now.getSeconds()).padStart(2, "0");
+    const opts = { timeZone: "America/New_York" };
+    const h = String(now.toLocaleString("en-US", { ...opts, hour: "numeric", hour12: false }).replace(/^24$/, "00")).padStart(2, "0");
+    const m = String(now.toLocaleString("en-US", { ...opts, minute: "numeric" })).padStart(2, "0");
+    const s = String(now.toLocaleString("en-US", { ...opts, second: "numeric" })).padStart(2, "0");
     const tz =
-      Intl.DateTimeFormat("en", { timeZoneName: "short" })
+      Intl.DateTimeFormat("en", { timeZone: "America/New_York", timeZoneName: "short" })
         .formatToParts(now)
         .find((p) => p.type === "timeZoneName")?.value || "EST";
     el.textContent = `NYC ${h}:${m}:${s} [ ${tz} ]`;
@@ -102,10 +103,10 @@ function openFilter(accordion, btn) {
   // D'abord la width
   accordion.style.maxWidth = inner.offsetWidth + "px";
 
-  // Puis la height après la transition width (200ms)
+  // Puis la height, 150ms avant la fin de la transition width
   setTimeout(() => {
     accordion.style.maxHeight = inner.offsetHeight + "px";
-  }, 200);
+  }, 150);
 }
 
 function closeFilter(accordion, btn) {
@@ -116,10 +117,10 @@ function closeFilter(accordion, btn) {
   // D'abord la height
   accordion.style.maxHeight = "";
 
-  // Puis la width après la transition height (200ms)
+  // Puis la width, 150ms avant la fin de la transition height
   setTimeout(() => {
     accordion.style.maxWidth = "";
-  }, 200);
+  }, 150);
 }
 
 function onFilterScroll() {
