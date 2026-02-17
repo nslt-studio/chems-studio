@@ -2,7 +2,13 @@
  * Global — logique partagée sur toutes les pages
  */
 
+import { scrambleText } from "./scramble.js";
+
 let clockInterval = null;
+let clockCycleTimeout = null;
+let clockScrambleCancel = null;
+let currentCityIndex = 0;
+let clockScrambling = false;
 let videoObserver = null;
 let filterLeaveTimeout = null;
 let filterScrollRAF = null;
@@ -10,25 +16,58 @@ let filterOpen = false;
 
 // ── Clock ──────────────────────────────────────────────
 
+const CLOCK_CITIES = [
+  { label: "NYC", timeZone: "America/New_York" },
+  { label: "LA", timeZone: "America/Los_Angeles" },
+  { label: "PAR", timeZone: "Europe/Paris", tzLabel: { standard: "CET", daylight: "CEST" } },
+];
+const CLOCK_CYCLE_MS = 5000;
+
+function formatCity(city) {
+  const now = new Date();
+  const opts = { timeZone: city.timeZone };
+  const h = String(now.toLocaleString("en-US", { ...opts, hour: "numeric", hour12: false }).replace(/^24$/, "00")).padStart(2, "0");
+  const m = String(now.toLocaleString("en-US", { ...opts, minute: "numeric" })).padStart(2, "0");
+  const s = String(now.toLocaleString("en-US", { ...opts, second: "numeric" })).padStart(2, "0");
+  let tz;
+  if (city.tzLabel) {
+    const isDST = new Date(now.toLocaleString("en-US", { timeZone: city.timeZone })).getTimezoneOffset() !== new Date(new Date(now.getFullYear(), 0, 1).toLocaleString("en-US", { timeZone: city.timeZone })).getTimezoneOffset();
+    tz = isDST ? city.tzLabel.daylight : city.tzLabel.standard;
+  } else {
+    tz = Intl.DateTimeFormat("en", { timeZone: city.timeZone, timeZoneName: "short" })
+      .formatToParts(now)
+      .find((p) => p.type === "timeZoneName")?.value || "";
+  }
+  return `${city.label} ${h}:${m}:${s} [ ${tz} ]`;
+}
+
 function initClock() {
   const el = document.querySelector("#clock");
   if (!el) return;
 
   function update() {
-    const now = new Date();
-    const opts = { timeZone: "America/New_York" };
-    const h = String(now.toLocaleString("en-US", { ...opts, hour: "numeric", hour12: false }).replace(/^24$/, "00")).padStart(2, "0");
-    const m = String(now.toLocaleString("en-US", { ...opts, minute: "numeric" })).padStart(2, "0");
-    const s = String(now.toLocaleString("en-US", { ...opts, second: "numeric" })).padStart(2, "0");
-    const tz =
-      Intl.DateTimeFormat("en", { timeZone: "America/New_York", timeZoneName: "short" })
-        .formatToParts(now)
-        .find((p) => p.type === "timeZoneName")?.value || "EST";
-    el.textContent = `NYC ${h}:${m}:${s} [ ${tz} ]`;
+    if (clockScrambling) return;
+    el.textContent = formatCity(CLOCK_CITIES[currentCityIndex]);
+  }
+
+  function scheduleCycle() {
+    clockCycleTimeout = setTimeout(() => {
+      currentCityIndex = (currentCityIndex + 1) % CLOCK_CITIES.length;
+      const target = formatCity(CLOCK_CITIES[currentCityIndex]);
+      clockScrambling = true;
+      clearInterval(clockInterval);
+      clockScrambleCancel = scrambleText(el, target, () => {
+        clockScrambling = false;
+        clockScrambleCancel = null;
+        clockInterval = setInterval(update, 1000);
+        scheduleCycle();
+      });
+    }, CLOCK_CYCLE_MS);
   }
 
   update();
   clockInterval = setInterval(update, 1000);
+  scheduleCycle();
 }
 
 function destroyClock() {
@@ -36,6 +75,16 @@ function destroyClock() {
     clearInterval(clockInterval);
     clockInterval = null;
   }
+  if (clockCycleTimeout) {
+    clearTimeout(clockCycleTimeout);
+    clockCycleTimeout = null;
+  }
+  if (clockScrambleCancel) {
+    clockScrambleCancel();
+    clockScrambleCancel = null;
+  }
+  clockScrambling = false;
+  currentCityIndex = 0;
 }
 
 // ── Video play/pause au viewport ───────────────────────

@@ -2,7 +2,11 @@
  * Home — logique spécifique à la homepage
  */
 
+import { scrambleText } from "../scramble.js";
+
 let videoRAF = null;
+let scrambleCancels = [];
+let scrambleProtected = new Set();
 
 function formatTime(seconds) {
   const m = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -40,7 +44,7 @@ function updateVideoTimecodes() {
     const video = item.querySelector("video");
     if (!video) return;
 
-    if (totalEl && !totalEl.classList.contains("w-condition-invisible")) {
+    if (totalEl && !totalEl.classList.contains("w-condition-invisible") && !scrambleProtected.has(totalEl)) {
       // Setup overlay structure on first pass
       if (!totalEl.querySelector("[data-total-base]")) {
         setupTotalOverlay(totalEl);
@@ -56,7 +60,7 @@ function updateVideoTimecodes() {
       overlay.style.width = progress + "%";
     }
 
-    if (progressEl && !progressEl.classList.contains("w-condition-invisible")) {
+    if (progressEl && !progressEl.classList.contains("w-condition-invisible") && !scrambleProtected.has(progressEl)) {
       progressEl.textContent = formatTime(video.currentTime || 0);
     }
   });
@@ -70,11 +74,29 @@ function handleTitlesClick(e) {
   item.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
 }
 
+function initScramble() {
+  document.querySelectorAll("[scramble]").forEach((el) => {
+    const text = el.textContent;
+    el.textContent = "";
+    const isTimecode = el.hasAttribute("video-progress") || el.hasAttribute("video-total");
+    if (isTimecode) scrambleProtected.add(el);
+    const cancel = scrambleText(el, text, isTimecode ? () => scrambleProtected.delete(el) : undefined);
+    scrambleCancels.push(cancel);
+  });
+}
+
+function destroyScramble() {
+  scrambleCancels.forEach((cancel) => cancel());
+  scrambleCancels = [];
+  scrambleProtected = new Set();
+}
+
 function init() {
   document.querySelectorAll(".selected-titles-inner").forEach((el) => {
     el.addEventListener("click", handleTitlesClick);
   });
 
+  initScramble();
   videoRAF = requestAnimationFrame(updateVideoTimecodes);
 }
 
@@ -82,6 +104,8 @@ function cleanup() {
   document.querySelectorAll(".selected-titles-inner").forEach((el) => {
     el.removeEventListener("click", handleTitlesClick);
   });
+
+  destroyScramble();
 
   if (videoRAF) {
     cancelAnimationFrame(videoRAF);
