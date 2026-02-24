@@ -235,10 +235,16 @@ function initClose() {
   closeBtn = document.querySelector("#close");
   if (!closeBtn) return;
 
-  // Définir le href pour que Swup gère la navigation
-  const backUrl = document.referrer && new URL(document.referrer).origin === window.location.origin
-    ? new URL(document.referrer).pathname
-    : "/";
+  // Priorité : URL trackée par Swup → referrer HTTP → home
+  let backUrl = "/";
+  if (window.__detailsBackUrl) {
+    backUrl = window.__detailsBackUrl;
+  } else if (document.referrer) {
+    try {
+      const ref = new URL(document.referrer);
+      if (ref.origin === window.location.origin) backUrl = ref.pathname;
+    } catch (_) {}
+  }
   closeBtn.setAttribute("href", backUrl);
 }
 

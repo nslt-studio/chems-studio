@@ -80,6 +80,10 @@ function updateCurrentLink() {
 function onPageEnter() {
   resetGlobal();
   updateCurrentLink();
+  // Mémoriser la dernière page non-details pour le bouton close
+  if (!isDetailsPage()) {
+    window.__detailsBackUrl = window.location.pathname;
+  }
   const page = getPageModule();
   if (page?.init) page.init();
 }
@@ -118,7 +122,9 @@ document.addEventListener("DOMContentLoaded", () => {
   swup.hooks.on("content:replace", () => onPageEnter());
 
   // Init de la première page
-  setNav(isDetailsPage(), false);
+  const onDetails = isDetailsPage();
+  setNav(onDetails, false);
+  if (!onDetails) window.__detailsBackUrl = window.location.pathname;
   const page = getPageModule();
   if (page?.init) page.init();
 });

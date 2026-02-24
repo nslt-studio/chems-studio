@@ -84,7 +84,6 @@ function destroyClock() {
     clockScrambleCancel = null;
   }
   clockScrambling = false;
-  currentCityIndex = 0;
 }
 
 // ── Video play/pause au viewport ───────────────────────
