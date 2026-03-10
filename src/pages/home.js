@@ -7,6 +7,7 @@ import { scrambleText } from "../scramble.js";
 let videoRAF = null;
 let scrambleCancels = [];
 let scrambleProtected = new Set();
+let scrollRAF = null;
 
 function formatTime(seconds) {
   const m = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -68,6 +69,29 @@ function updateVideoTimecodes() {
   videoRAF = requestAnimationFrame(updateVideoTimecodes);
 }
 
+function rotationLoop() {
+  document.querySelectorAll(".selected-item .selected-link").forEach((el) => {
+    const rect = el.closest(".selected-item").getBoundingClientRect();
+    const progress = Math.min(1, Math.max(0, -rect.top / rect.height));
+    el.style.transform = `rotateX(${progress * 90}deg)`;
+  });
+  scrollRAF = requestAnimationFrame(rotationLoop);
+}
+
+function initScrollRotate() {
+  scrollRAF = requestAnimationFrame(rotationLoop);
+}
+
+function destroyScrollRotate() {
+  if (scrollRAF) {
+    cancelAnimationFrame(scrollRAF);
+    scrollRAF = null;
+  }
+  document.querySelectorAll(".selected-item .selected-link").forEach((el) => {
+    el.style.transform = "";
+  });
+}
+
 function handleTitlesClick(e) {
   const item = e.currentTarget.closest(".selected-item");
   if (!item) return;
@@ -97,6 +121,7 @@ function init() {
   });
 
   initScramble();
+  initScrollRotate();
   videoRAF = requestAnimationFrame(updateVideoTimecodes);
 }
 
@@ -106,6 +131,7 @@ function cleanup() {
   });
 
   destroyScramble();
+  destroyScrollRotate();
 
   if (videoRAF) {
     cancelAnimationFrame(videoRAF);
