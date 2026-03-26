@@ -63,8 +63,24 @@ function getActiveVideo() {
   return activeSlide?.querySelector("video") || null;
 }
 
+function pauseAllVideos() {
+  document.querySelectorAll(".embla__slide video").forEach((v) => v.pause());
+}
+
+function playActiveVideo() {
+  const video = getActiveVideo();
+  if (video) video.play().catch(() => {});
+}
+
 function updateVideoTimecode() {
   if (!embla) return;
+
+  // Garantit que seule la vidéo active joue, même si l'IntersectionObserver global en relance d'autres
+  const activeIndex = embla.selectedScrollSnap();
+  embla.slideNodes().forEach((slide, i) => {
+    const v = slide.querySelector("video");
+    if (v && i !== activeIndex && !v.paused) v.pause();
+  });
 
   const video = getActiveVideo();
   const isVideo = !!video;
@@ -313,8 +329,9 @@ function scheduleAutoAdvance() {
   if (video) {
     // Retirer loop pour que l'événement ended se déclenche
     video.loop = false;
-    // Vidéo : next à la fin
+    // Vidéo : reset à 0 puis next à la fin
     const handler = () => {
+      video.currentTime = 0;
       if (embla) embla.scrollNext();
     };
     video.addEventListener("ended", handler);
@@ -334,6 +351,8 @@ function applyRatio(el, w, h) {
 }
 
 function setSlideAspectRatios() {
+  const promises = [];
+
   document.querySelectorAll(".embla__slide").forEach((slide) => {
     const videoWrap = slide.querySelector(".embla-video");
     const imgWrap = slide.querySelector(".embla-img-inner");
@@ -344,9 +363,12 @@ function setSlideAspectRatios() {
       if (video.videoWidth) {
         applyRatio(videoWrap, video.videoWidth, video.videoHeight);
       } else {
-        video.addEventListener("loadedmetadata", () => {
-          applyRatio(videoWrap, video.videoWidth, video.videoHeight);
-        }, { once: true });
+        promises.push(new Promise((resolve) => {
+          video.addEventListener("loadedmetadata", () => {
+            applyRatio(videoWrap, video.videoWidth, video.videoHeight);
+            resolve();
+          }, { once: true });
+        }));
       }
     } else if (imgWrap) {
       const img = imgWrap.querySelector(".embla-img");
@@ -354,12 +376,16 @@ function setSlideAspectRatios() {
       if (img.naturalWidth) {
         applyRatio(imgWrap, img.naturalWidth, img.naturalHeight);
       } else {
-        img.addEventListener("load", () => {
-          applyRatio(imgWrap, img.naturalWidth, img.naturalHeight);
-        }, { once: true });
+        promises.push(new Promise((resolve) => {
+          img.addEventListener("load", () => {
+            applyRatio(imgWrap, img.naturalWidth, img.naturalHeight);
+            resolve();
+          }, { once: true });
+        }));
       }
     }
   });
+
 }
 
 // ── Slider ────────────────────────────────────────────
@@ -377,9 +403,14 @@ function initSlider() {
   }
 
   updateActiveSlide();
+  pauseAllVideos();
+  playActiveVideo();
+
   embla.on("select", () => {
     hasSlided = true;
     updateActiveSlide();
+    pauseAllVideos();
+    playActiveVideo();
     scheduleAutoAdvance();
   });
 
@@ -443,6 +474,13 @@ function setInitialState() {
 
 function init() {
   setSlideAspectRatios();
+
+  const slides = document.querySelectorAll(".embla__slide");
+  if (slides.length === 1) {
+    const container = document.querySelector(".embla__container");
+    if (container) container.style.justifyContent = "center";
+  }
+
   initSlider();
   initControls();
   initClose();
