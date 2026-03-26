@@ -327,6 +327,41 @@ function scheduleAutoAdvance() {
   }
 }
 
+// ── Aspect ratios ─────────────────────────────────────
+
+function applyRatio(el, w, h) {
+  if (w && h) el.style.aspectRatio = `${w} / ${h}`;
+}
+
+function setSlideAspectRatios() {
+  document.querySelectorAll(".embla__slide").forEach((slide) => {
+    const videoWrap = slide.querySelector(".embla-video");
+    const imgWrap = slide.querySelector(".embla-img-inner");
+
+    if (videoWrap) {
+      const video = videoWrap.querySelector("video");
+      if (!video) return;
+      if (video.videoWidth) {
+        applyRatio(videoWrap, video.videoWidth, video.videoHeight);
+      } else {
+        video.addEventListener("loadedmetadata", () => {
+          applyRatio(videoWrap, video.videoWidth, video.videoHeight);
+        }, { once: true });
+      }
+    } else if (imgWrap) {
+      const img = imgWrap.querySelector(".embla-img");
+      if (!img) return;
+      if (img.naturalWidth) {
+        applyRatio(imgWrap, img.naturalWidth, img.naturalHeight);
+      } else {
+        img.addEventListener("load", () => {
+          applyRatio(imgWrap, img.naturalWidth, img.naturalHeight);
+        }, { once: true });
+      }
+    }
+  });
+}
+
 // ── Slider ────────────────────────────────────────────
 
 function initSlider() {
@@ -407,6 +442,7 @@ function setInitialState() {
 // ── Lifecycle ─────────────────────────────────────────
 
 function init() {
+  setSlideAspectRatios();
   initSlider();
   initControls();
   initClose();
