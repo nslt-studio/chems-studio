@@ -95,53 +95,8 @@ const styleEl = document.createElement("style");
 styleEl.textContent = STYLES;
 document.head.appendChild(styleEl);
 
-// ── Loader ────────────────────────────────────────────
-function initLoader() {
-  const loader = document.querySelector(".loader");
-  if (!loader) return;
-
-  if (sessionStorage.getItem("loaderShown") === "done") {
-    loader.remove();
-    return;
-  }
-
-  const target = loader.querySelector(".loader-logo");
-  if (!target) return;
-
-  // Wrapper pour l'overlay positionné en absolu
-  const wrapper = document.createElement("span");
-  wrapper.style.cssText = "position:relative;display:inline-block;";
-  target.parentNode.insertBefore(wrapper, target);
-  wrapper.appendChild(target);
-
-  // Overlay : même image opacity 1, clip-path révèle de bas en haut (le contenu reste fixe)
-  const overlay = target.cloneNode(true);
-  overlay.style.cssText = "position:absolute;inset:0;opacity:1;clip-path:inset(100% 0 0 0);";
-  wrapper.appendChild(overlay);
-
-  setTimeout(() => {
-    overlay.style.transition = "clip-path 1200ms cubic-bezier(0.7, 0, 0.25, 1)";
-    requestAnimationFrame(() => { overlay.style.clipPath = "inset(0% 0 0 0)"; });
-
-    setTimeout(() => {
-      loader.style.transition = "opacity 300ms ease, filter 300ms ease";
-      requestAnimationFrame(() => {
-        loader.style.opacity = "0";
-        loader.style.filter = "blur(calc(2 * var(--blur, 20px)))";
-        loader.addEventListener("transitionend", () => {
-          sessionStorage.setItem("loaderShown", "done");
-          document.documentElement.classList.remove("show-loader");
-          loader.remove();
-        }, { once: true });
-      });
-    }, 1500);
-
-  }, 600);
-}
-
 // Boot
 document.addEventListener("DOMContentLoaded", () => {
-  initLoader();
   initGlobal();
   initSwup();
 
