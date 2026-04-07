@@ -90,6 +90,16 @@ function rotationLoop() {
     const video = activeItem?.querySelector("video");
     if (video) video.play().catch(() => {});
     lastActiveItem = activeItem;
+
+    // Précharger les 2 vidéos suivantes
+    const items = [...document.querySelectorAll(".selected-item")];
+    const idx = items.indexOf(activeItem);
+    [1, 2].forEach((offset) => {
+      const next = items[idx + offset];
+      if (!next) return;
+      const v = next.querySelector("video");
+      if (v && v.dataset.src && !v.src) v.src = v.dataset.src;
+    });
   }
 
   document.querySelectorAll(".selected-item").forEach((item) => {
