@@ -100,11 +100,11 @@ function initLoader() {
   const loader = document.querySelector(".loader");
   if (!loader) return;
 
-  if (sessionStorage.getItem("loaderShown")) {
+  if (sessionStorage.getItem("loaderShown") === "done") {
     loader.remove();
     return;
   }
-  sessionStorage.setItem("loaderShown", "1");
+  sessionStorage.setItem("loaderShown", "done");
 
   const target = loader.querySelector(".loader-logo");
   if (!target) return;
