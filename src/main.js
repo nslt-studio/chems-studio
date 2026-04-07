@@ -104,7 +104,6 @@ function initLoader() {
     loader.remove();
     return;
   }
-  sessionStorage.setItem("loaderShown", "done");
 
   const target = loader.querySelector(".loader-logo");
   if (!target) return;
@@ -129,7 +128,11 @@ function initLoader() {
       requestAnimationFrame(() => {
         loader.style.opacity = "0";
         loader.style.filter = "blur(calc(2 * var(--blur, 20px)))";
-        loader.addEventListener("transitionend", () => loader.remove(), { once: true });
+        loader.addEventListener("transitionend", () => {
+          sessionStorage.setItem("loaderShown", "done");
+          document.documentElement.classList.remove("show-loader");
+          loader.remove();
+        }, { once: true });
       });
     }, 1500);
 
