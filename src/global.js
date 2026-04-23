@@ -94,7 +94,10 @@ function initVideoPlayback() {
       entries.forEach((entry) => {
         const v = entry.target;
         if (entry.isIntersecting) {
-          if (v.dataset.src && !v.src) v.src = v.dataset.src;
+          if (v.dataset.src && !v.src) {
+            v.src = v.dataset.src;
+            v.load();
+          }
           v.play().catch(() => {});
         } else {
           v.pause();

@@ -394,6 +394,22 @@ function setSlideAspectRatios() {
 
 // ── Slider ────────────────────────────────────────────
 
+function preloadAdjacentVideos() {
+  if (!embla) return;
+  const slides = embla.slideNodes();
+  const total = slides.length;
+  const active = embla.selectedScrollSnap();
+  [-1, 0, 1, 2].forEach((offset) => {
+    const idx = ((active + offset) % total + total) % total;
+    const v = slides[idx]?.querySelector("video");
+    if (v && v.dataset.src && !v.src) {
+      v.src = v.dataset.src;
+      v.preload = "auto";
+      v.load();
+    }
+  });
+}
+
 function initSlider() {
   const viewport = document.querySelector(".embla__viewport");
   if (!viewport) return;
@@ -407,12 +423,14 @@ function initSlider() {
   }
 
   updateActiveSlide();
+  preloadAdjacentVideos();
   pauseAllVideos();
   playActiveVideo();
 
   embla.on("select", () => {
     hasSlided = true;
     updateActiveSlide();
+    preloadAdjacentVideos();
     pauseAllVideos();
     playActiveVideo();
     scheduleAutoAdvance();
@@ -483,6 +501,9 @@ function init() {
   if (slides.length === 1) {
     const container = document.querySelector(".embla__container");
     if (container) container.style.justifyContent = "center";
+    document.querySelectorAll(".embla__prev, .embla__next").forEach((el) => {
+      el.style.display = "none";
+    });
   }
 
   initSlider();
